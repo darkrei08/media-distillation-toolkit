@@ -1,0 +1,16 @@
+{
+  "segments": [
+    {
+      "timestamp": "00:00:03",
+      "speaker": "MicioDev",
+      "text": "Benvenuti al corso."
+    },
+    {
+      "start": "00:00:11",
+      "text": "Iniziamo dalla struttura del progetto."
+    },
+    {
+      "text": "Questo segmento non contiene un timestamp inventato."
+    }
+  ]
+}

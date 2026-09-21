@@ -1,0 +1,15 @@
+{
+  "source_url": "https://www.youtube.com/playlist?list=PLHG2hvLRbYZI",
+  "videos": [
+    {
+      "id": "Ms1jNmZYngQ",
+      "title": "Laravel 13 + Vue 3 da ZERO: iniziamo un progetto REALE | Corso #01",
+      "url": "https://www.youtube.com/watch?v=Ms1jNmZYngQ"
+    },
+    {
+      "id": "RM02ecHr-K8",
+      "title": "Come funziona Laravel? Route → Controller → JSON | Corso #02",
+      "url": "https://www.youtube.com/watch?v=RM02ecHr-K8"
+    }
+  ]
+}
