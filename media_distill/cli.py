@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .manifest import validate_manifest
 from .reconcile import reconcile
+from .subtitles import parse_subtitles
 from .transcript import render_transcript
 from .ytptube import HISTORY, QUEUE, YTPTubeClient, YTPTubeError
 
@@ -41,12 +42,23 @@ def main(argv: list[str] | None = None) -> int:
     enqueue_parser = subparsers.add_parser("enqueue", help="enqueue URLs in YTPTube")
     enqueue_parser.add_argument("urls", nargs="+", metavar="URL")
 
-    reconcile_parser = subparsers.add_parser("reconcile", help="apply YTPTube history to a manifest")
+    subtitles_parser = subparsers.add_parser("subtitles", help="convert subtitles to transcript JSON")
+    subtitles_parser.add_argument("input", type=Path)
+    subtitles_parser.add_argument("--output", required=True, type=Path)
+
+    reconcile_parser = subparsers.add_parser("reconcile", help="apply YTPTube queue state to a manifest")
     reconcile_parser.add_argument("manifest", type=Path)
     reconcile_parser.add_argument("--output", type=Path)
 
     args = parser.parse_args(argv)
     try:
+        if args.command == "subtitles":
+            raw = args.input.read_text(encoding="utf-8-sig")
+            transcript = parse_subtitles(raw)
+            _write_manifest(transcript, args.output)
+            _emit(f"subtitles: {args.output} and {len(transcript['segments'])} segments")
+            return 0
+
         if args.command == "enqueue":
             _emit(f"enqueued: {YTPTubeClient().submit(args.urls)}")
             return 0

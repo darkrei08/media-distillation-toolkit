@@ -163,3 +163,9 @@ Prior art in this repository: `tests/test_toolkit.py` for the manifest and rende
 The honest question this spec cannot answer is whether YTPTube is worth its footprint. It is a second container, a second SQLite database, a second UI, and a second thing to keep patched, on a 16 GB host that already runs several agent sessions. What justifies it is the operational surface that `yt-dlp` alone does not provide: a queue, retries, progress, and an API. If a future measurement shows that acquisitions are few and manual, the lighter alternative is a thin `yt-dlp` invocation inside the existing service, and this lane should be deleted rather than maintained out of inertia.
 
 That alternative is not chosen now because the operator asked for the queue, and because deleting a service later is easier than discovering, after a corpus has grown, that fetches were never recorded.
+
+## Subtitle conversion lane
+
+YTPTube downloads platform subtitles when they exist, and those arrive as WebVTT or SRT, which is not the transcript JSON that `render_transcript` consumes. The `subtitles` subcommand bridges the gap: it parses either format into `{"segments": [{"start": ..., "text": ...}]}`, strips inline markup, collapses whitespace, and drops the rolling repetition YouTube auto-captions produce.
+
+This lane does not transcribe. A video without platform subtitles still needs an external ASR engine, which this package does not ship. What it does is make that engine unnecessary for every source that already has subtitles.

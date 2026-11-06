@@ -93,7 +93,18 @@ For local ASR recipes and backend trade-offs, see [`docs/quickstart-asr.md`](doc
 7. **Resumability**: write small checkpoints so a failed run can resume without repeating completed stages.
 8. **Human verification**: mark claims as pending until a person checks the source and relevant timestamps.
 
-The toolkit currently implements manifest validation, Markdown rendering, and the `enqueue` and `reconcile` subcommands that talk to YTPTube. There is no server to start yet, no downloader of its own, and no automatic provider or model calls.
+The toolkit currently implements manifest validation, Markdown rendering, subtitle conversion, and the `enqueue` and `reconcile` subcommands that talk to YTPTube. There is no server to start yet, no downloader of its own, and no automatic provider or model calls.
+
+## Subtitles
+
+Transcription is not part of this package. When a source already has platform subtitles, YTPTube downloads them, and the `subtitles` subcommand converts the WebVTT or SRT file into the transcript JSON that `render` consumes:
+
+```sh
+micio-distill subtitles data/downloads/files/captions.vtt --output artifacts/transcript.json
+micio-distill render artifacts/transcript.json --output artifacts/transcript.md
+```
+
+Videos without platform subtitles still need an external ASR engine, which this package does not ship.
 
 ## Development
 
@@ -122,4 +133,4 @@ Open <http://127.0.0.1:8010/>. The port is loopback only; to reach it from anoth
 
 Two rules hold this together. There is one acquisition engine, so no code path in the package downloads media; the reasoning is in [`docs/ytptube-fetch-lane.md`](docs/ytptube-fetch-lane.md). And the image is pinned by digest, because a tag moves and a digest does not.
 
-Transcription is not implemented. `render_transcript` renders a transcript JSON that something else has to produce first; pick a backend before wiring it in.
+Transcription is not implemented. `render_transcript` renders a transcript JSON that something else has to produce first: platform subtitles through the `subtitles` subcommand, or an external ASR engine for videos that have none.
