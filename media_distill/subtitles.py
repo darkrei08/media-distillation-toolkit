@@ -67,9 +67,11 @@ def parse_subtitles(text: str) -> dict[str, list[dict[str, str]]]:
 
         i += 1
 
-        # Collect payload lines until blank line or end.
+        # Collect payload lines until the blank line that ends the cue. YouTube
+        # auto-captions use a single space as a placeholder line, so only a
+        # truly empty line ends the payload.
         payload_parts: list[str] = []
-        while i < len(lines) and lines[i].strip():
+        while i < len(lines) and lines[i] != "":
             payload_parts.append(lines[i].strip())
             i += 1
 

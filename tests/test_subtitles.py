@@ -113,3 +113,28 @@ class ParseSubtitlesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class YouTubePlaceholderTests(unittest.TestCase):
+    def test_space_only_placeholder_line_does_not_end_the_cue(self) -> None:
+        text: str = (
+            "WEBVTT\n"
+            "Kind: captions\n"
+            "\n"
+            "00:00:02.760 --> 00:00:04.470 align:start position:0%\n"
+            " \n"
+            "Il<00:00:02.920><c> bello</c><00:00:03.280><c> della</c>\n"
+            "\n"
+            "00:00:04.470 --> 00:00:06.750 align:start position:0%\n"
+            "programmazione<00:00:05.200><c> automatica</c>\n"
+        )
+        result: dict = parse_subtitles(text)
+        self.assertEqual(
+            result,
+            {
+                "segments": [
+                    {"start": "00:00:02", "text": "Il bello della"},
+                    {"start": "00:00:04", "text": "programmazione automatica"},
+                ]
+            },
+        )
