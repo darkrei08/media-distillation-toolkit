@@ -1,0 +1,23 @@
+services:
+  ytptube:
+    # Exact release plus digest: never latest, so an upstream change cannot alter a run.
+    image: ghcr.io/arabcoders/ytptube:v2.7.6@sha256:a5b648c6c20d877cf90715415b1b31565dda9399020d80f186000fdd76474f86
+    restart: unless-stopped
+    ports:
+      # Loopback only: the toolkit and this host's browser reach it, nothing else.
+      - "127.0.0.1:${YTPTUBE_PORT:-8010}:8081"
+    environment:
+      YTP_CONFIG_PATH: /config
+      YTP_DOWNLOAD_PATH: /downloads/files
+      # Temp shares the downloads filesystem so the final rename stays atomic.
+      YTP_TEMP_PATH: /downloads/tmp
+      YTP_PORT: "8081"
+      # Authentication stays enabled; the account is bootstrapped from the environment.
+      YTP_AUTH_USERNAME: ${YTPTUBE_USERNAME:?set YTPTUBE_USERNAME}
+      YTP_AUTH_PASSWORD: ${YTPTUBE_PASSWORD:?set YTPTUBE_PASSWORD}
+      TZ: ${TZ:-Europe/Rome}
+    volumes:
+      # Disposable configuration and queue database; deleting it never touches the corpus.
+      - ../data/ytptube:/config
+      # Acquired artifacts, part of the operator's data.
+      - ../data/downloads:/downloads

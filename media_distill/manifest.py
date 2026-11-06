@@ -11,6 +11,33 @@ def _valid_url(value: object) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
+def _optional_record_errors(prefix: str, video: Mapping) -> list[str]:
+    """Validate the additive YTPTube and freshness fields, when present."""
+    errors: list[str] = []
+    for key in (
+        "origin",
+        "queue_item_id",
+        "queue_status",
+        "queue_error",
+        "artifact_path",
+        "artifact_completed_at",
+    ):
+        if key in video and not isinstance(video[key], str):
+            errors.append(f"{prefix}.{key} must be a string")
+    if isinstance(video.get("origin"), str) and video["origin"] not in {"declared", "adopted"}:
+        errors.append(f"{prefix}.origin must be 'declared' or 'adopted'")
+    for key in ("queue_attempts", "artifact_bytes"):
+        if key not in video:
+            continue
+        value = video[key]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"{prefix}.{key} must be a non-negative integer")
+    for key in ("stale", "unverified"):
+        if key in video and not isinstance(video[key], bool):
+            errors.append(f"{prefix}.{key} must be a boolean")
+    return errors
+
+
 def validate_manifest(manifest: object) -> list[str]:
     """Return validation errors for a manifest, or an empty list when valid."""
     errors: list[str] = []
@@ -45,5 +72,6 @@ def validate_manifest(manifest: object) -> list[str]:
             errors.append(f"{prefix}.title must be a non-empty string")
         if not _valid_url(video.get("url")):
             errors.append(f"{prefix}.url must be a valid HTTP(S) URL")
+        errors.extend(_optional_record_errors(prefix, video))
 
     return errors

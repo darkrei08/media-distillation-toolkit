@@ -6,7 +6,9 @@ import sys
 from pathlib import Path
 
 from .manifest import validate_manifest
+from .reconcile import reconcile
 from .transcript import render_transcript
+from .ytptube import HISTORY, QUEUE, YTPTubeClient, YTPTubeError
 
 
 def _read_json(path: Path) -> object:
@@ -14,6 +16,15 @@ def _read_json(path: Path) -> object:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"could not read JSON from {path}: {error}") from error
+
+
+def _write_manifest(manifest: object, path: Path) -> None:
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _emit(message: str, *, err: bool = False) -> None:
+    stream = sys.stderr if err else sys.stdout
+    stream.write(f"{message}\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,23 +38,53 @@ def main(argv: list[str] | None = None) -> int:
     render_parser.add_argument("transcript", type=Path)
     render_parser.add_argument("--output", required=True, type=Path)
 
+    enqueue_parser = subparsers.add_parser("enqueue", help="enqueue URLs in YTPTube")
+    enqueue_parser.add_argument("urls", nargs="+", metavar="URL")
+
+    reconcile_parser = subparsers.add_parser("reconcile", help="apply YTPTube history to a manifest")
+    reconcile_parser.add_argument("manifest", type=Path)
+    reconcile_parser.add_argument("--output", type=Path)
+
     args = parser.parse_args(argv)
     try:
+        if args.command == "enqueue":
+            _emit(f"enqueued: {YTPTubeClient().submit(args.urls)}")
+            return 0
+
+        if args.command == "reconcile":
+            manifest = _read_json(args.manifest)
+            if not isinstance(manifest, dict):
+                _emit("invalid: manifest must be a JSON object", err=True)
+                return 1
+            errors = validate_manifest(manifest)
+            if errors:
+                for error in errors:
+                    _emit(f"invalid: {error}", err=True)
+                return 1
+            client = YTPTubeClient()
+            # Both stores: an item in flight is neither a completion nor an absence.
+            items = client.list_items(QUEUE) + client.list_items(HISTORY)
+            result = reconcile(manifest, items)
+            output = args.output or args.manifest
+            _write_manifest(result, output)
+            _emit(f"reconciled: {output}")
+            return 0
+
         data = _read_json(args.manifest if args.command == "validate" else args.transcript)
         if args.command == "validate":
             errors = validate_manifest(data)
             if errors:
                 for error in errors:
-                    print(f"invalid: {error}", file=sys.stderr)
+                    _emit(f"invalid: {error}", err=True)
                 return 1
-            print(f"valid: {args.manifest}")
+            _emit(f"valid: {args.manifest}")
             return 0
 
         args.output.write_text(render_transcript(data), encoding="utf-8")
-        print(f"rendered: {args.output}")
+        _emit(f"rendered: {args.output}")
         return 0
-    except (OSError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
+    except (OSError, ValueError, YTPTubeError) as error:
+        _emit(f"error: {error}", err=True)
         return 1
 
 
